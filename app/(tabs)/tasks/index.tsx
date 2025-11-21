@@ -1,10 +1,10 @@
-// app/tasks/index.tsx
+// app/(tabs)/tasks/index.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, FlatList, Alert } from "react-native";
-import AddButton from "../components/AddButton";
-import TaskItem from "../components/TaskItem";
-import { Task, create as createTask } from "../types/task";
-import { loadTasks, saveTasks } from "../lib/storage";
+import AddButton from "../../components/AddButton";
+import TaskItem from "../../components/TaskItem";
+import { Task, create as createTask } from "../../types/task";
+import { loadTasks, saveTasks } from "../../lib/storage";
 
 export default function Tasks() {
   const [newTaskText, setNewTaskText] = useState("");
@@ -34,16 +34,20 @@ export default function Tasks() {
   const handleDelete = (id: string) => {
     Alert.alert("Eliminar", "¿Seguro que quieres eliminar esta tarea?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Eliminar", style: "destructive", onPress: () => setTasks((p) => p.filter(t => t.id !== id)) },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: () => setTasks((p) => p.filter((t) => t.id !== id)),
+      },
     ]);
   };
 
   const toggleDone = (id: string) => {
-    setTasks((p) => p.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    setTasks((p) => p.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   };
 
   const toggleImportant = (id: string) => {
-    setTasks((p) => p.map(t => t.id === id ? { ...t, important: !t.important } : t));
+    setTasks((p) => p.map((t) => (t.id === id ? { ...t, important: !t.important } : t)));
   };
 
   return (
