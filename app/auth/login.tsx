@@ -12,7 +12,7 @@ export default function Login() {
       return;
     }
 
-    router.replace("/tasks");
+    router.replace('/(tabs)/missions');
   };
 
   return (

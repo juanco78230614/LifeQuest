@@ -1,72 +1,55 @@
-// app/(tabs)/_layout.tsx
-import React from "react";
-import { Tabs } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
+import { useAppStore } from '../../store/useAppStore';
 
-export default function TabLayout() {
+export default function AdminLayout() {
+  const isDark = useAppStore(state => state.isDarkMode);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#ffffff",
-          borderTopWidth: 1,
-          borderColor: "#e5e7eb",
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          borderTopColor: isDark ? 'rgba(148, 163, 184, 0.2)' : '#e5e7eb',
+          paddingBottom: 8,
+          paddingTop: 8,
           height: 60,
         },
-        tabBarActiveTintColor: "#059669",
-        tabBarInactiveTintColor: "#6b7280",
+        tabBarActiveTintColor: '#f59e0b',
+        tabBarInactiveTintColor: isDark ? '#94a3b8' : '#6b7280',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="dashboard"
         options={{
-          title: "Inicio",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="home" size={size ?? 24} color={color} />
-          ),
+          title: 'Panel Admin',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👑</Text>,
         }}
       />
-
       <Tabs.Screen
-        name="habits"
+        name="users"
         options={{
-          title: "Hábitos",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="self-improvement" size={size ?? 24} color={color} />
-          ),
+          title: 'Usuarios',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👥</Text>,
         }}
       />
-
       <Tabs.Screen
-        name="tasks"
+        name="missions"
         options={{
-          title: "Tareas",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size ?? 24} color={color} />
-          ),
+          title: 'Misiones',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🎯</Text>,
         }}
       />
-
       <Tabs.Screen
-        name="progress"
+        name="settings"
         options={{
-          title: "Progreso",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="line-chart" size={size ?? 24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Perfil",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" size={size ?? 24} color={color} />
-          ),
+          title: 'Ajustes',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>⚙️</Text>,
         }}
       />
     </Tabs>
