@@ -1,38 +1,15 @@
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { useAppStore } from '../../store/useAppStore';
+import React from 'react';
+import { View } from 'react-native';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  className?: string;
 }
 
-export function Card({ children, style }: CardProps) {
-  const isDark = useAppStore(state => state.isDarkMode);
-
+export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
   return (
-    <View style={[
-      styles.card,
-      isDark ? styles.cardDark : styles.cardLight,
-      style
-    ]}>
+    <View className={`bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm ${className}`}>
       {children}
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    padding: 16,
-  },
-  cardLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  cardDark: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-  },
-});
+};

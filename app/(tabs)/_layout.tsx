@@ -1,43 +1,24 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
-import { useAppStore } from '../../store/useAppStore';
 
-export default function AdminLayout() {
-  const isDark = useAppStore(state => state.isDarkMode);
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          borderTopColor: isDark ? 'rgba(148, 163, 184, 0.2)' : '#e5e7eb',
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: '#6366f1',
         },
-        tabBarActiveTintColor: '#f59e0b',
-        tabBarInactiveTintColor: isDark ? '#94a3b8' : '#6b7280',
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+        headerTintColor: '#fff',
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#9ca3af',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#e5e7eb',
         },
       }}
     >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: 'Panel Admin',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👑</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="users"
-        options={{
-          title: 'Usuarios',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👥</Text>,
-        }}
-      />
       <Tabs.Screen
         name="missions"
         options={{
@@ -46,10 +27,24 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="habits"
         options={{
-          title: 'Ajustes',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>⚙️</Text>,
+          title: 'Hábitos',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🔄</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: 'Estadísticas',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📊</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
     </Tabs>

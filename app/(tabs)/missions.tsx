@@ -1,530 +1,265 @@
-import { View, Text, ScrollView, StyleSheet, useColorScheme } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StatusBar } from 'expo-status-bar';
+import { useAppStore } from '../../store/useAppStore';
+import { getXPNeeded } from '../../store/useAppStore';
+import { MissionCard } from '../components/MissionCard';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
+import { ProgressBar } from '../components/ProgressBar';
+import { DifficultyLevel, MissionCategory } from '../types';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  TextInput
+} from 'react-native';
 
-interface Mission {
-  id: string;
-  title: string;
-  category: 'productivity' | 'wellness' | 'habit';
-  difficulty: 'easy' | 'medium' | 'hard';
-  xp: number;
-  completed: boolean;
-  createdAt: string;
-}
+const XP_VALUES = {
+  easy: 10,
+  medium: 25,
+  hard: 50,
+};
 
-interface UserStats {
-  level: number;
-  xp: number;
-  xpToNextLevel: number;
-  totalMissionsCompleted: number;
-  streak: number;
-  lastCompletionDate: string | null;
-}
+export default function MissionsScreen() {
+  const {
+    currentUser,
+    missions,
+    addMission,
+    completeMission,
+    deleteMission,
+  } = useAppStore();
 
-export default function StatsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const [missions, setMissions] = useState<Mission[]>([]);
-  const [userStats, setUserStats] = useState<UserStats>({
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    totalMissionsCompleted: 0,
-    streak: 0,
-    lastCompletionDate: null,
-  });
-  const [username, setUsername] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<MissionCategory>('productivity');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const userMissions = missions.filter((m) => m.userId === currentUser?.id);
+  const activeMissions = userMissions.filter((m) => !m.completed);
+  const completedMissions = userMissions.filter((m) => m.completed);
 
-  const loadData = async () => {
-    const savedMissions = await AsyncStorage.getItem('lifequest-missions');
-    const savedStats = await AsyncStorage.getItem('lifequest-stats');
-    const savedUser = await AsyncStorage.getItem('lifequest-user');
+  const handleCreateMission = () => {
+    if (!title.trim()) {
+      Alert.alert('Error', 'Por favor ingresa un título para la misión');
+      return;
+    }
 
-    if (savedMissions) setMissions(JSON.parse(savedMissions));
-    if (savedStats) setUserStats(JSON.parse(savedStats));
-    if (savedUser) setUsername(JSON.parse(savedUser).username);
+    addMission({
+      title: title.trim(),
+      category,
+      difficulty,
+      xp: XP_VALUES[difficulty],
+      completed: false,
+    });
+
+    setTitle('');
+    setShowModal(false);
   };
 
-  const totalXPEarned = missions.filter(m => m.completed).reduce((sum, m) => sum + m.xp, 0);
-  const missionsByCategory = {
-    productivity: {
-      completed: missions.filter(m => m.category === 'productivity' && m.completed).length,
-      total: missions.filter(m => m.category === 'productivity').length,
-    },
-    wellness: {
-      completed: missions.filter(m => m.category === 'wellness' && m.completed).length,
-      total: missions.filter(m => m.category === 'wellness').length,
-    },
-    habit: {
-      completed: missions.filter(m => m.category === 'habit' && m.completed).length,
-      total: missions.filter(m => m.category === 'habit').length,
-    },
-  };
-
-  const activeMissions = missions.filter(m => !m.completed).length;
+  const xpNeeded = currentUser ? getXPNeeded(currentUser.level) : 100;
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={isDark ? ['#064e3b', '#065f46', '#047857'] : ['#f0fdf4', '#dcfce7', '#bbf7d0']}
-        style={styles.gradient}
-      >
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        
-        {/* Header */}
-        <LinearGradient
-          colors={['#10b981', '#059669']}
-          style={styles.header}
-        >
-          <Text style={styles.headerTitle}>LifeQuest</Text>
-          <Text style={styles.headerSubtitle}>Hola, {username} 👋</Text>
-        </LinearGradient>
+    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <ScrollView className="flex-1">
+        <View className="p-4 space-y-4">
+          {/* Player Stats */}
+          <Card>
+            <View className="flex-row items-center justify-between mb-4">
+              <View>
+                <Text className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Nivel {currentUser?.level || 1}
+                </Text>
+                <Text className="text-sm text-gray-600 dark:text-gray-400">
+                  🔥 Racha: {currentUser?.streak || 0} días
+                </Text>
+              </View>
+              <View className="bg-primary w-16 h-16 rounded-full items-center justify-center">
+                <Text className="text-white text-2xl font-bold">
+                  {currentUser?.level || 1}
+                </Text>
+              </View>
+            </View>
+            <ProgressBar
+              current={currentUser?.xp || 0}
+              total={xpNeeded}
+            />
+          </Card>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.content}>
-            <Text style={[styles.title, isDark ? styles.textDark : styles.textLight]}>
-              Estadísticas
+          {/* Add Mission Button */}
+          <Button
+            title="➕ Nueva Misión"
+            onPress={() => setShowModal(true)}
+            variant="primary"
+          />
+
+          {/* Active Missions */}
+          <View>
+            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              Misiones Activas ({activeMissions.length})
+            </Text>
+            {activeMissions.length === 0 ? (
+              <Card>
+                <Text className="text-center text-gray-500 dark:text-gray-400">
+                  No tienes misiones activas. ¡Crea una nueva!
+                </Text>
+              </Card>
+            ) : (
+              <View className="space-y-3">
+                {activeMissions.map((mission) => (
+                  <MissionCard
+                    key={mission.id}
+                    mission={mission}
+                    onComplete={() => completeMission(mission.id)}
+                    onDelete={() => deleteMission(mission.id)}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Completed Missions */}
+          {completedMissions.length > 0 && (
+            <View>
+              <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+                Completadas ({completedMissions.length})
+              </Text>
+              <View className="space-y-3">
+                {completedMissions.map((mission) => (
+                  <MissionCard
+                    key={mission.id}
+                    mission={mission}
+                    onComplete={() => {}}
+                    onDelete={() => deleteMission(mission.id)}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Create Mission Modal */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white dark:bg-gray-800 rounded-t-3xl p-6">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              Nueva Misión
             </Text>
 
-            {/* Level Card */}
-            <LinearGradient
-              colors={['#10b981', '#059669']}
-              style={styles.levelCard}
-            >
-              <View style={styles.levelIcon}>
-                <Text style={styles.levelIconText}>🏆</Text>
-              </View>
-              <View style={styles.levelInfo}>
-                <Text style={styles.levelLabel}>Nivel actual</Text>
-                <Text style={styles.levelValue}>Nivel {userStats.level}</Text>
-                <Text style={styles.levelProgress}>
-                  {userStats.xp} / {userStats.xpToNextLevel} XP hasta nivel {userStats.level + 1}
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* Stats Grid */}
-            <View style={styles.statsGrid}>
-              <StatBox
-                icon="⚡"
-                label="XP Total Ganado"
-                value={totalXPEarned.toLocaleString()}
-                color={['#f59e0b', '#d97706']}
-                isDark={isDark}
-              />
-              <StatBox
-                icon="🎯"
-                label="Misiones Completadas"
-                value={userStats.totalMissionsCompleted.toString()}
-                color={['#10b981', '#059669']}
-                isDark={isDark}
-              />
-              <StatBox
-                icon="📅"
-                label="Racha Actual"
-                value={`${userStats.streak} días`}
-                color={['#f97316', '#ea580c']}
-                isDark={isDark}
-              />
-              <StatBox
-                icon="📋"
-                label="Misiones Activas"
-                value={activeMissions.toString()}
-                color={['#3b82f6', '#2563eb']}
-                isDark={isDark}
-              />
-            </View>
-
-            {/* Category Breakdown */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionIcon}>📈</Text>
-                <Text style={[styles.sectionTitle, isDark ? styles.textDark : styles.textLight]}>
-                  Por Categoría
-                </Text>
-              </View>
-
-              <View style={styles.categoryList}>
-                <CategoryBar
-                  label="Productividad"
-                  completed={missionsByCategory.productivity.completed}
-                  total={missionsByCategory.productivity.total}
-                  color="#3b82f6"
-                  isDark={isDark}
-                />
-                <CategoryBar
-                  label="Bienestar"
-                  completed={missionsByCategory.wellness.completed}
-                  total={missionsByCategory.wellness.total}
-                  color="#ec4899"
-                  isDark={isDark}
-                />
-                <CategoryBar
-                  label="Hábitos"
-                  completed={missionsByCategory.habit.completed}
-                  total={missionsByCategory.habit.total}
-                  color="#10b981"
-                  isDark={isDark}
-                />
-              </View>
-            </View>
-
-            {/* Achievements */}
-            <View style={[styles.achievementsCard, isDark ? styles.achievementsCardDark : styles.achievementsCardLight]}>
-              <Text style={[styles.achievementsTitle, isDark ? styles.achievementsTitleDark : styles.achievementsTitleLight]}>
-                🏆 Logros Desbloqueados
+            {/* Title */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Título
               </Text>
-              
-              <View style={styles.achievementsList}>
-                {userStats.level >= 5 && (
-                  <AchievementBadge
-                    title="Guerrero Nivel 5"
-                    description="Alcanzaste nivel 5"
-                    isDark={isDark}
-                  />
-                )}
-                {userStats.streak >= 7 && (
-                  <AchievementBadge
-                    title="Racha Semanal"
-                    description="7 días consecutivos"
-                    isDark={isDark}
-                  />
-                )}
-                {userStats.totalMissionsCompleted >= 10 && (
-                  <AchievementBadge
-                    title="Veterano"
-                    description="10 misiones completadas"
-                    isDark={isDark}
-                  />
-                )}
-                {userStats.level === 1 && userStats.totalMissionsCompleted === 0 && (
-                  <Text style={[styles.noAchievements, isDark ? styles.noAchievementsDark : styles.noAchievementsLight]}>
-                    Completa misiones para desbloquear logros
-                  </Text>
-                )}
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Ej: Hacer ejercicio 30 min"
+                className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            {/* Category */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Categoría
+              </Text>
+              <View className="flex-row space-x-2">
+                {[
+                  { value: 'productivity', label: '💼 Productividad' },
+                  { value: 'wellness', label: '❤️ Bienestar' },
+                  { value: 'habit', label: '🔄 Hábito' },
+                ].map((cat) => (
+                  <TouchableOpacity
+                    key={cat.value}
+                    onPress={() => setCategory(cat.value as MissionCategory)}
+                    className={`flex-1 py-3 rounded-xl ${
+                      category === cat.value
+                        ? 'bg-primary'
+                        : 'bg-gray-100 dark:bg-gray-700'
+                    }`}
+                  >
+                    <Text
+                      className={`text-center text-sm ${
+                        category === cat.value
+                          ? 'text-white'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
+            </View>
+
+            {/* Difficulty */}
+            <View className="mb-6">
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Dificultad
+              </Text>
+              <View className="flex-row space-x-2">
+                {[
+                  { value: 'easy', label: 'Fácil', xp: 10 },
+                  { value: 'medium', label: 'Media', xp: 25 },
+                  { value: 'hard', label: 'Difícil', xp: 50 },
+                ].map((diff) => (
+                  <TouchableOpacity
+                    key={diff.value}
+                    onPress={() => setDifficulty(diff.value as DifficultyLevel)}
+                    className={`flex-1 py-3 rounded-xl ${
+                      difficulty === diff.value
+                        ? 'bg-primary'
+                        : 'bg-gray-100 dark:bg-gray-700'
+                    }`}
+                  >
+                    <Text
+                      className={`text-center text-sm font-medium ${
+                        difficulty === diff.value
+                          ? 'text-white'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {diff.label}
+                    </Text>
+                    <Text
+                      className={`text-center text-xs ${
+                        difficulty === diff.value
+                          ? 'text-white/80'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      +{diff.xp} XP
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Buttons */}
+            <View className="space-y-2">
+              <Button
+                title="Crear Misión"
+                onPress={handleCreateMission}
+                variant="primary"
+              />
+              <Button
+                title="Cancelar"
+                onPress={() => setShowModal(false)}
+                variant="secondary"
+              />
             </View>
           </View>
-        </ScrollView>
-      </LinearGradient>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-function StatBox({ icon, label, value, color, isDark }: any) {
-  return (
-    <View style={[styles.statBox, isDark ? styles.statBoxDark : styles.statBoxLight]}>
-      <LinearGradient
-        colors={color}
-        style={styles.statBoxIcon}
-      >
-        <Text style={styles.statBoxIconText}>{icon}</Text>
-      </LinearGradient>
-      <Text style={[styles.statBoxValue, isDark ? styles.textDark : styles.textLight]}>{value}</Text>
-      <Text style={[styles.statBoxLabel, isDark ? styles.descDark : styles.descLight]}>{label}</Text>
-    </View>
-  );
-}
-
-function CategoryBar({ label, completed, total, color, isDark }: any) {
-  const percentage = total > 0 ? (completed / total) * 100 : 0;
-  
-  return (
-    <View style={[styles.categoryBar, isDark ? styles.categoryBarDark : styles.categoryBarLight]}>
-      <View style={styles.categoryHeader}>
-        <Text style={[styles.categoryLabel, isDark ? styles.textDark : styles.textLight]}>{label}</Text>
-        <Text style={[styles.categoryValue, isDark ? styles.textDark : styles.textLight]}>
-          {completed} / {total}
-        </Text>
-      </View>
-      <View style={[styles.categoryProgressBg, isDark ? styles.categoryProgressBgDark : styles.categoryProgressBgLight]}>
-        <View
-          style={[styles.categoryProgress, { width: `${percentage}%`, backgroundColor: color }]}
-        />
-      </View>
-    </View>
-  );
-}
-
-function AchievementBadge({ title, description, isDark }: any) {
-  return (
-    <View style={[styles.achievementBadge, isDark ? styles.achievementBadgeDark : styles.achievementBadgeLight]}>
-      <View style={styles.achievementIcon}>
-        <Text style={styles.achievementIconText}>🏆</Text>
-      </View>
-      <View style={styles.achievementContent}>
-        <Text style={[styles.achievementTitle, isDark ? styles.textDark : styles.textLight]}>{title}</Text>
-        <Text style={[styles.achievementDesc, isDark ? styles.achievementDescDark : styles.achievementDescLight]}>{description}</Text>
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(209, 250, 229, 0.9)',
-    marginTop: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  levelCard: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    padding: 24,
-    gap: 16,
-    marginBottom: 16,
-  },
-  levelIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  levelIconText: {
-    fontSize: 32,
-  },
-  levelInfo: {
-    flex: 1,
-  },
-  levelLabel: {
-    fontSize: 12,
-    color: 'rgba(209, 250, 229, 0.9)',
-    marginBottom: 4,
-  },
-  levelValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  levelProgress: {
-    fontSize: 14,
-    color: 'rgba(209, 250, 229, 0.9)',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statBox: {
-    width: '48%',
-    borderRadius: 16,
-    padding: 16,
-  },
-  statBoxLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  statBoxDark: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-  },
-  statBoxIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statBoxIconText: {
-    fontSize: 20,
-  },
-  statBoxValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statBoxLabel: {
-    fontSize: 10,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  sectionIcon: {
-    fontSize: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  categoryList: {
-    gap: 12,
-  },
-  categoryBar: {
-    borderRadius: 16,
-    padding: 16,
-  },
-  categoryBarLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  categoryBarDark: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  categoryLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  categoryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  categoryProgressBg: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  categoryProgressBgLight: {
-    backgroundColor: '#e5e7eb',
-  },
-  categoryProgressBgDark: {
-    backgroundColor: '#334155',
-  },
-  categoryProgress: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  achievementsCard: {
-    borderRadius: 16,
-    padding: 16,
-  },
-  achievementsCardLight: {
-    backgroundColor: 'rgba(220, 252, 231, 1)',
-    borderWidth: 1,
-    borderColor: '#86efac',
-  },
-  achievementsCardDark: {
-    backgroundColor: 'rgba(6, 78, 59, 0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-  },
-  achievementsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  achievementsTitleLight: {
-    color: '#065f46',
-  },
-  achievementsTitleDark: {
-    color: '#d1fae5',
-  },
-  achievementsList: {
-    gap: 8,
-  },
-  achievementBadge: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
-  },
-  achievementBadgeLight: {
-    backgroundColor: 'rgba(134, 239, 172, 0.5)',
-  },
-  achievementBadgeDark: {
-    backgroundColor: 'rgba(6, 95, 70, 0.3)',
-  },
-  achievementIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#f59e0b',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  achievementIconText: {
-    fontSize: 20,
-  },
-  achievementContent: {
-    flex: 1,
-  },
-  achievementTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  achievementDesc: {
-    fontSize: 12,
-  },
-  achievementDescLight: {
-    color: '#065f46',
-  },
-  achievementDescDark: {
-    color: '#86efac',
-  },
-  noAchievements: {
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  noAchievementsLight: {
-    color: '#065f46',
-  },
-  noAchievementsDark: {
-    color: '#86efac',
-  },
-  textLight: {
-    color: '#111827',
-  },
-  textDark: {
-    color: '#ffffff',
-  },
-  descLight: {
-    color: '#6b7280',
-  },
-  descDark: {
-    color: '#94a3b8',
-  },
-});

@@ -1,74 +1,107 @@
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
-import { Link, router } from "expo-router";
-import { useState } from "react";
+// app/auth/register.tsx
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAppStore } from '../../store/useAppStore';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
 
-export default function Register() {
-  const [usuario, setUsuario] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+export default function RegisterScreen() {
+  const router = useRouter();
+  const { register } = useAppStore();
 
-  const handleRegister = () => {
-    if (!usuario || !password || !confirm) {
-      alert("Rellena todo");
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!username || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Por favor completa todos los campos');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Las contraseñas no coinciden');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
-    if (password !== confirm) {
-      alert("Las contraseñas no coinciden");
-      return;
+    setLoading(true);
+    try {
+      const success = await register(username.trim(), email.trim(), password);
+      if (!success) {
+        Alert.alert('Error', 'El usuario o email ya existe, o hubo un problema con Firebase');
+      } else {
+        // Si todo bien, puedes redirigir a la pantalla principal (index) o dejar que index useEffect maneje
+        router.replace('/');
+      }
+    } catch (error) {
+      console.error('Register screen error:', error);
+      Alert.alert('Error', 'Algo salió mal. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
     }
-
-    alert("Usuario creado!");
-    router.replace("/auth/login");
   };
 
   return (
-    <View className="flex-1 bg-[#003824] px-6 justify-center">
-      <View className="bg-[#0d1f1a] rounded-2xl p-6">
-        <View className="flex-row mb-6">
-          <Link href="/auth/login">
-            <Text className="text-gray-400 text-lg mr-4">Iniciar Sesión</Text>
-          </Link>
-          <Text className="text-green-400 text-lg font-semibold">
-            Registrarse
-          </Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View className="flex-1 justify-center px-6 py-12">
+          <View className="items-center mb-8">
+            <Text className="text-6xl mb-4">🎮</Text>
+            <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Crear cuenta</Text>
+            <Text className="text-gray-600 dark:text-gray-400 text-center">Comienza tu viaje épico hoy</Text>
+          </View>
+
+          <Card className="mb-6">
+            <View className="space-y-4">
+              <View>
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario</Text>
+                <TextInput value={username} onChangeText={setUsername} placeholder="tu_usuario" autoCapitalize="none"
+                  className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white" placeholderTextColor="#9ca3af" />
+              </View>
+
+              <View>
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</Text>
+                <TextInput value={email} onChangeText={setEmail} placeholder="tu@email.com"
+                  keyboardType="email-address" autoCapitalize="none"
+                  className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white" placeholderTextColor="#9ca3af" />
+              </View>
+
+              <View>
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contraseña</Text>
+                <TextInput value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry
+                  className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white" placeholderTextColor="#9ca3af" />
+              </View>
+
+              <View>
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmar Contraseña</Text>
+                <TextInput value={confirmPassword} onChangeText={setConfirmPassword} placeholder="••••••••" secureTextEntry
+                  className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white" placeholderTextColor="#9ca3af" />
+              </View>
+            </View>
+          </Card>
+
+          <Button title="Crear Cuenta" onPress={handleRegister} loading={loading} variant="primary" className="mb-4" />
+
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text className="text-center text-primary">¿Ya tienes cuenta? Inicia sesión</Text>
+          </TouchableOpacity>
         </View>
-
-        <Text className="text-gray-300 mb-1">Usuario</Text>
-        <TextInput
-          placeholder="Tu nombre"
-          className="bg-[#0b1512] text-white p-3 rounded-xl mb-4"
-          placeholderTextColor="#5f7c74"
-          onChangeText={setUsuario}
-        />
-
-        <Text className="text-gray-300 mb-1">Contraseña</Text>
-        <TextInput
-          secureTextEntry
-          placeholder="Crea una contraseña"
-          className="bg-[#0b1512] text-white p-3 rounded-xl mb-4"
-          placeholderTextColor="#5f7c74"
-          onChangeText={setPassword}
-        />
-
-        <Text className="text-gray-300 mb-1">Confirmar contraseña</Text>
-        <TextInput
-          secureTextEntry
-          placeholder="Repite la contraseña"
-          className="bg-[#0b1512] text-white p-3 rounded-xl mb-6"
-          placeholderTextColor="#5f7c74"
-          onChangeText={setConfirm}
-        />
-
-        <TouchableOpacity
-          className="bg-green-600 py-3 rounded-xl"
-          onPress={handleRegister}
-        >
-          <Text className="text-center text-white font-semibold">
-            Crear Cuenta
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

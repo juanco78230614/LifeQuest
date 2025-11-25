@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 
-export default function SettingsScreen() {
+export default function AdminSettingsScreen() {
   const router = useRouter();
   const { saveToStorage, loadFromStorage } = useAppStore();
 
@@ -136,7 +136,7 @@ export default function SettingsScreen() {
 
         {/* Back */}
         <Button
-          title="← Volver"
+          title="← Volver al Dashboard"
           onPress={() => router.back()}
           variant="secondary"
         />

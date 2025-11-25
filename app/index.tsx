@@ -1,100 +1,95 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { isOnboardingDone } from "./lib/onboardingStorage";
-
-// 🔥 Reanimated
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-} from "react-native-reanimated";
+import { useEffect } from 'react';
+import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAppStore } from '../store/useAppStore';
+import { Button } from './components/Button';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const currentUser = useAppStore((state) => state.currentUser);
 
   useEffect(() => {
-  async function check() {
-    const done = await isOnboardingDone();
-
-    if (!done) {
-      // Si NO terminó onboarding → llevar al paso 1
-      router.replace("/onboarding/step1");
+    if (currentUser) {
+      if (!currentUser.hasCompletedOnboarding) {
+        router.replace('/onboarding');
+      } else if (currentUser.role === 'admin') {
+        router.replace('/admin/dashboard');
+      } else {
+        router.replace('/(tabs)/missions');
+      }
     }
-    // Si SÍ terminó, NO redirigimos
-    // mostramos la bienvenida normal
-  }
-
-  check();
-}, []);
+  }, [currentUser]);
 
   return (
-    <View className="flex-1 px-6 justify-center bg-gradient-to-b from-emerald-900 to-emerald-700">
+    <LinearGradient
+      colors={['#6366f1', '#8b5cf6', '#d946ef']}
+      className="flex-1 justify-center items-center px-8"
+    >
+<View className="items-center mb-16"></View>
 
-      {/* LOGO */}
-      <Animated.View entering={FadeInDown.duration(600)} className="items-center mb-10">
-        <View className="w-20 h-20 rounded-2xl bg-white/10 justify-center items-center">
-          <Text className="text-white text-3xl font-bold">LQ</Text>
-        </View>
-
-        <Text className="text-white text-3xl font-bold mt-4">LifeQuest</Text>
-
-        <Text className="text-gray-200 mt-2 text-base">
-          Convierte tu vida en una aventura épica
+  <View className="items-center mb-16">
+    <View className="items-center mb-16">
+      <Text className="text-white text-6xl font-bold mb-3">
+          LifeQuest
         </Text>
-      </Animated.View>
-
-      {/* TARJETA 1 */}
-      <Animated.View
-        entering={FadeInUp.delay(200).duration(500)}
-        className="bg-[#0F1A27] rounded-2xl p-5 mb-4 border border-white/10"
-      >
-        <Text className="text-white text-lg font-semibold">Misiones Diarias</Text>
-        <Text className="text-gray-300 text-sm mt-1">
-          Transforma tus tareas en misiones emocionantes
+      <Text className="text-white text-6xl font-bold mb-3">
+          BIENVENIDOS
         </Text>
-      </Animated.View>
-
-      {/* TARJETA 2 */}
-      <Animated.View
-        entering={FadeInUp.delay(350).duration(500)}
-        className="bg-[#0F1A27] rounded-2xl p-5 mb-4 border border-white/10"
-      >
-        <Text className="text-white text-lg font-semibold">Sistema de Niveles</Text>
-        <Text className="text-gray-300 text-sm mt-1">
-          Gana experiencia y sube de nivel al completar misiones
+    </View>
+  
+</View>
+      {/* BLOQUE ÉPICO DE BIENVENIDA */}
+      <View className="items-center mb-20">
+        <Text className="text-white/90 text-lg text-center leading-snug px-4">
+           ¡Transforma tu vida en una aventura épica!
+           
         </Text>
-      </Animated.View>
 
-      {/* TARJETA 3 */}
-      <Animated.View
-        entering={FadeInUp.delay(500).duration(500)}
-        className="bg-[#0F1A27] rounded-2xl p-5 mb-6 border border-white/10"
-      >
-        <Text className="text-white text-lg font-semibold">Rachas y Logros</Text>
-        <Text className="text-gray-300 text-sm mt-1">
-          Mantén tu motivación con rachas diarias y recompensas
+        {/* Ícono */}
+        <Text className="text-8xl mb-6">🎮</Text>
+
+        {/* Título épico */}
+        <Text className="text-white text-4xl font-extrabold text-center mb-4 leading-tight">
+          PUEDES SER MEJOR  
+          CADA DÍA
         </Text>
-      </Animated.View>
+
+        {/* Subtítulo */}
+        <Text className="text-white/90 text-lg text-center leading-snug px-4">
+          La aventura de tu vida comienza aquí.  
+          Sube de nivel, supera desafíos  
+          y descubre tu verdadero potencial.
+        </Text>
+        
+      </View>
+
+      {/* NOMBRE DEL JUEGO */}
+      <View className="items-center mb-16">
+        
+
+        <Text className="text-white/75 text-lg text-center">
+          Convierte tu vida en una aventura épica.
+        </Text>
+      </View>
 
       {/* BOTÓN */}
-      <Animated.View entering={FadeInUp.delay(650).duration(500)}>
-        <TouchableOpacity
-          className="bg-emerald-600 py-4 rounded-xl mb-4"
-          onPress={() => router.push("/auth/login")}
-        >
-          <Text className="text-center text-white text-lg font-semibold">
-            Comenzar Aventura →
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+      <View className="w-full max-w-sm space-y-5">
+        
+        <Button
+          title="Iniciar Sesión"
+          onPress={() => router.push('/auth/login')}
+          variant="primary"
+          className="w-full bg-white"
+        />
 
-      {/* FOOTER */}
-      <Animated.Text
-        entering={FadeInUp.delay(750).duration(500)}
-        className="text-center text-gray-200 text-xs"
-      >
-        Organiza tu vida mientras te diviertes 🎮✨
-      </Animated.Text>
-    </View>
+        <Text className="text-white/70 text-sm text-center mt-2 px-6">
+          Gamifica tu productividad.  
+          Cada día es una misión.  
+          Cada logro te hace más fuerte.
+        </Text>
+      </View>
+
+    </LinearGradient>
   );
 }
